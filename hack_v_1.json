@@ -1,0 +1,135 @@
+{
+  "name": "Hack V1",
+  "type": "flogo:app",
+  "version": "0.0.1",
+  "appModel": "1.1.0",
+  "description": "",
+  "imports": [
+    "github.com/project-flogo/aws-contrib/trigger/lambda",
+    "github.com/project-flogo/contrib/activity/actreturn",
+    "github.com/project-flogo/contrib/activity/log",
+    "github.com/project-flogo/contrib/activity/rest",
+    "github.com/project-flogo/flow"
+  ],
+  "triggers": [
+    {
+      "id": "aws_lambda_trigger",
+      "ref": "#lambda",
+      "name": "AWS Lambda Trigger",
+      "description": "AWS Lambda Trigger",
+      "handlers": [
+        {
+          "action": {
+            "ref": "#flow",
+            "settings": {
+              "flowURI": "res://flow:hack_1"
+            },
+            "input": {
+              "event": "=$.event",
+              "context": "=$.context"
+            },
+            "output": {
+              "data": "=$.response"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "id": "flow:hack_1",
+      "data": {
+        "name": "Hack 1",
+        "metadata": {
+          "input": [
+            {
+              "name": "event",
+              "type": "object"
+            },
+            {
+              "name": "context",
+              "type": "object"
+            }
+          ],
+          "output": [
+            {
+              "name": "response",
+              "type": "any"
+            }
+          ]
+        },
+        "tasks": [
+          {
+            "id": "log_2",
+            "name": "Log",
+            "description": "Logs a message",
+            "activity": {
+              "ref": "#log",
+              "input": {
+                "message": "=$flow.event",
+                "addDetails": false,
+                "usePrint": false
+              }
+            }
+          },
+          {
+            "id": "rest_3",
+            "name": "REST Invoke",
+            "description": "Invokes a REST Service",
+            "activity": {
+              "ref": "#rest",
+              "input": {
+                "content": "=$flow.event"
+              },
+              "settings": {
+                "method": "POST",
+                "uri": "http://75f40232bbf8.ngrok.io/test"
+              }
+            }
+          },
+          {
+            "id": "log_4",
+            "name": "Log (2)",
+            "description": "Logs a message",
+            "activity": {
+              "ref": "#log",
+              "input": {
+                "message": "=$activity[rest_3].data",
+                "addDetails": false,
+                "usePrint": false
+              }
+            }
+          },
+          {
+            "id": "actreturn_5",
+            "name": "Return",
+            "description": "Return Activity",
+            "activity": {
+              "ref": "#actreturn",
+              "settings": {
+                "mappings": {
+                  "response": "=$activity[rest_3].data"
+                }
+              }
+            }
+          }
+        ],
+        "links": [
+          {
+            "from": "log_2",
+            "to": "rest_3"
+          },
+          {
+            "from": "rest_3",
+            "to": "log_4"
+          },
+          {
+            "from": "log_4",
+            "to": "actreturn_5"
+          }
+        ]
+      }
+    }
+  ]
+}
